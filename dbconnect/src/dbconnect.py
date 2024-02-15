@@ -28,13 +28,19 @@ class DBConnect:
         self.result = None
         self.columns = None
         self.aggregate = None
+        self.table_name = None
+        self.conditions = None
+        self.conjuction = None
+        self.order_by = None
+        self.group_by = None
+        self.limit = None
         if return_type not in [list, dict, pd.DataFrame]:
             raise ValueError("Invalid return type")
         self.return_type = return_type
 
         # self.query_params = query_params
 
-    def __enter__(self) -> psycopg2.extensions.cursor:
+    def __enter__(self) -> 'DBConnect':
         """
         Establishes a connection to the PostgreSQL database and returns a cursor.
 
@@ -55,9 +61,8 @@ class DBConnect:
 
         except (Exception, psycopg2.Error) as error:
             raise error
-            # raise ("Error while fetching data from PostgreSQL", error)
 
-    def query(self, query: str, fetch: bool = True):
+    def query(self, query: str, fetch: bool = True) -> dict | list | pd.DataFrame:
         """
         Executes a SQL query.
 
@@ -106,6 +111,44 @@ class DBConnect:
             raise error
         pass
 
+    def construct_query(self) -> str:
+        """
+        Constructs a SQL query based on the query parameters.
+
+        Returns
+        -------
+        str
+            The constructed SQL query.
+        """
+        pass
+
+    def validate_query_params(self) -> None:
+        """
+        Validates the query parameters.
+
+        Raises
+        ------
+        ValueError
+            If the query parameters are not as expected.
+        """
+        if not isinstance(self.columns, (list, type(None))):
+            raise TypeError("Columns must be a list (or None for all columns)")
+        if not isinstance(self.table_name, str):
+            raise TypeError("Table name must be a string")
+        if not isinstance(self.conditions, (dict, type(None))):
+            raise TypeError("Conditions must be a dictionary")
+        if not isinstance(self.aggregate, (dict, type(None))):
+            raise TypeError("Aggregate must be a dictionary")
+        if not isinstance(self.conjuction, str):
+            raise TypeError("Conjunction must be a string")
+        if not isinstance(self.order_by, (dict, type(None), str, tuple)):
+            raise TypeError(
+                "order_by must be a dictionary/tuple/string or None")
+        if not isinstance(self.group_by, (list, type(None))):
+            raise TypeError("Group must be a list")
+        if not isinstance(self.limit, (int, type(None))):
+            raise TypeError("Limit must be an integer")
+
     def read(self,
              schema: str,
              table_name: str,
@@ -115,8 +158,7 @@ class DBConnect:
              conjuction: str = 'AND',
              order_by: str | tuple | dict | None = None,
              group_by: list | None = None,
-             limit: int | None = None,
-             return_type: type = None):
+             limit: int | None = None) -> dict | list | pd.DataFrame:
         """
         Reads data from a table in the database.
 
@@ -163,32 +205,20 @@ class DBConnect:
         ValueError
             If group by is not specified for aggregate functions.
         """
-        if not isinstance(columns, (list, type(None))):
-            raise TypeError("Columns must be a list (or None for all columns)")
+        self.schema = schema
+        self.table_name = table_name
+        self.conditions = conditions
+        self.conjuction = conjuction
+        self.order_by = order_by
+        self.group_by = group_by
+        self.limit = limit
+        
+        self.validate_query_params()
+
         if not columns:
             self.columns = self._get_column_names(schema, table_name)
         else:
             self.columns = columns
-        if not isinstance(table_name, str):
-            raise TypeError("Table name must be a string")
-        if not isinstance(conditions, (dict, type(None))):
-            raise TypeError("Conditions must be a dictionary")
-        if not isinstance(aggregate, (dict, type(None))):
-            raise TypeError("Aggregate must be a dictionary")
-        if not isinstance(conjuction, str):
-            raise TypeError("Conjunction must be a string")
-        if not isinstance(order_by, (dict, type(None), str, tuple)):
-            raise TypeError(
-                "order_by must be a dictionary/tuple/string or None")
-        if not isinstance(group_by, (list, type(None))):
-            raise TypeError("Group must be a list")
-        if not isinstance(limit, (int, type(None))):
-            raise TypeError("Limit must be an integer")
-        if return_type and return_type not in [list, dict, pd.DataFrame]:
-            raise TypeError("Invalid return type")
-
-        if not return_type:
-            return_type = self.return_type
 
         if aggregate:
             self.aggregate = aggregate
