@@ -4,11 +4,6 @@ from psycopg2 import sql
 import datetime as dt
 
 
-class CredentialError(ValueError):
-    pass
-
-
-
 class DBConnect:
     def __init__(self, conn_params: dict, return_type: type = dict) -> None:
         """
@@ -31,6 +26,8 @@ class DBConnect:
         self.connection = None
         self.cursor = None
         self.result = None
+        self.columns = None
+        self.aggregate = None
         if return_type not in [list, dict, pd.DataFrame]:
             raise ValueError("Invalid return type")
         self.return_type = return_type
@@ -55,10 +52,9 @@ class DBConnect:
             self.connection = psycopg2.connect(**self.comm_params)
             self.cursor = self.connection.cursor()
             return self
-    
+
         except (Exception, psycopg2.Error) as error:
-            raise CredentialError(
-                "Error while connecting to PostgreSQL", error)
+            raise error
             # raise ("Error while fetching data from PostgreSQL", error)
 
     def query(self, query: str, fetch: bool = True):
@@ -110,15 +106,15 @@ class DBConnect:
             raise error
         pass
 
-    def read(self, 
+    def read(self,
              schema: str,
-             table_name: str, 
+             table_name: str,
              columns: list | None = None,
-             aggregate: dict | None = None, 
-             conditions: dict | None = None, 
+             aggregate: dict | None = None,
+             conditions: dict | None = None,
              conjuction: str = 'AND',
              order_by: str | tuple | dict | None = None,
-             group_by: list | None = None, 
+             group_by: list | None = None,
              limit: int | None = None,
              return_type: type = None):
         """
@@ -173,7 +169,6 @@ class DBConnect:
             self.columns = self._get_column_names(schema, table_name)
         else:
             self.columns = columns
-
         if not isinstance(table_name, str):
             raise TypeError("Table name must be a string")
         if not isinstance(conditions, (dict, type(None))):
@@ -183,34 +178,36 @@ class DBConnect:
         if not isinstance(conjuction, str):
             raise TypeError("Conjunction must be a string")
         if not isinstance(order_by, (dict, type(None), str, tuple)):
-            raise TypeError("order_by must be a dictionary/tuple/string or None")
+            raise TypeError(
+                "order_by must be a dictionary/tuple/string or None")
         if not isinstance(group_by, (list, type(None))):
             raise TypeError("Group must be a list")
         if not isinstance(limit, (int, type(None))):
             raise TypeError("Limit must be an integer")
         if return_type and return_type not in [list, dict, pd.DataFrame]:
             raise TypeError("Invalid return type")
-        
+
         if not return_type:
             return_type = self.return_type
-        
+
         if aggregate:
             self.aggregate = aggregate
             if not group_by:
-                raise ValueError("Group by must be specified for aggregate functions")
-        
+                raise ValueError(
+                    "Group by must be specified for aggregate functions")
 
         query = sql.SQL("SELECT ").format()
 
         if aggregate:
             # Apply aggregation function to columns specified in the `aggregate` dictionary, else use the column directly.
             columns_sql = [
-                sql.SQL("{}({})").format(sql.SQL(aggregate.get(column)), sql.Identifier(column)) if column in aggregate else sql.Identifier(column)
+                sql.SQL("{}({})").format(sql.SQL(aggregate.get(column)), sql.Identifier(
+                    column)) if column in aggregate else sql.Identifier(column)
                 for column in columns
             ]
 
         else:
-            columns_sql = [sql.Identifier(column) for column in columns]
+            columns_sql = [sql.Identifier(column) for column in self.columns]
 
         # Constructing the complete SELECT statement
         query = sql.SQL("SELECT {}").format(sql.SQL(', ').join(columns_sql))
@@ -245,9 +242,9 @@ class DBConnect:
                 order_by = {order_by: "ASC"}
             elif isinstance(order_by, tuple):
                 order_by = {order_by[0]: order_by[1]}
-    
+
             order_by = [(sql.Identifier(column), sql.SQL(direction))
-                    for column, direction in order_by.items()]
+                        for column, direction in order_by.items()]
             order_by_clause = sql.SQL(', ').join(
                 sql.SQL("{column} {direction}").format(
                     column=column,
@@ -280,8 +277,12 @@ class DBConnect:
         elif self.return_type == dict:
             return {i: dict(zip(self.columns, row)) for i, row in enumerate(self.result)}
         elif self.return_type == pd.DataFrame:
-            _columns = [_col if _col not in self.aggregate else f"{self.aggregate[_col].lower()}: {_col}" for _col in self.columns]
-            return pd.DataFrame(self.result, columns=_columns)
+            if not self.aggregate:
+                return pd.DataFrame(self.result, columns=self.columns)
+            else:
+                _columns = [_col if _col not in self.aggregate else f"{
+                    self.aggregate[_col].lower()}: {_col}" for _col in self.columns]
+                return pd.DataFrame(self.result, columns=_columns)
 
     @staticmethod
     def format_array_for_sql(array):
@@ -316,12 +317,13 @@ class DBConnect:
         list
             The column names of the table.
         """
-        query = sql.SQL("SELECT * FROM {schema}.{table_name} LIMIT 1").format(
+        query = sql.SQL("SELECT * FROM {schema}.{table_name} LIMIT 1;").format(
             schema=sql.Identifier(schema),
             table_name=sql.Identifier(table_name)
         )
         self.cursor.execute(query)
-        return [desc[0] for desc in self.cursor.description]
+        self.columns = [desc[0] for desc in self.cursor.description]
+        return self.columns
 
     def __exit__(self, exc_type, exc_value, traceback):
         """

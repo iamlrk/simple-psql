@@ -1,31 +1,35 @@
 import os
 import pandas as pd
 from dbconnect import DBConnect
-from dotenv import load_dotenv
+import configparser
 
-load_dotenv()
 
 if __name__ == "__main__":
+    config = configparser.ConfigParser()
+    config.read('config.ini', encoding='utf-8')
     conn_params = {
-        "host": os.getenv("DB_HOST"),
-        "database": os.getenv("DB_NAME"),
-        "user": os.getenv("DB_USER"),
-        "password": os.getenv("DB_PASSWORD"),
+        "host": config['DB']['DB_HOST'],
+        "database": config['DB']['DB_NAME'],
+        "user": config['DB']['DB_USER'].strip(),
+        "password": config['DB']['DB_PASSWORD'].strip(),
+        "port": config['DB']['DB_PORT'],
     }
+    
     dbconnect = DBConnect(conn_params, return_type=pd.DataFrame)
-    # query = "SELECT * FROM procurement_383.bom_383_main"
+    query = "SELECT * FROM procurement_383.bom_383_main"
     _query_params = {
-        "schema": "test_schema",
-        "table_name": "test_table",
-        "columns": ["Name", "Grade"],
+        "schema": "public",
+        "table_name": "film_list",
+        "columns": ["category", "price"],
         "aggregate": {
-            "part_level": "AVG"
+            "price": "SUM"
         },
         "conditions": {
-            "Grade": (5, ">")
+            "length": (60, ">")
         },
-        "order_by": "Name",
-        "group_by": ["Name"],
+        "order_by": ("price", "DESC"),
+        "group_by": ["category", "price"],
+        "limit": 10,
     }
     with dbconnect as cursor:
         # print(cursor.query(query))
