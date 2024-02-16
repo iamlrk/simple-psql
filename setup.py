@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1' 
+VERSION = '0.1.0' 
 DESCRIPTION = 'Wrapper around psycopg2 to simplify the process of connecting to a PostgreSQL database and executing queries.'
 with open('README.md', 'r') as r:
     LONG_DESCRIPTION = r.read()
@@ -8,11 +8,11 @@ with open('README.md', 'r') as r:
 # Setting up
 setup(
        # the name must match the folder name 'simpleopers'
-        name = "simple-psql", 
+        name = "simplepgsql", 
         version = VERSION,
         authors = "iamlrk",
         author_email="<lepakshiramkiran@hotmail.com>",
-        url = 'https://github.com/iamlrk/simple-psql',
+        url = 'https://github.com/iamlrk/simple-pgsql',
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         long_description_content_type="text/markdown",

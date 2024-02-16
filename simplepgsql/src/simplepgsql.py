@@ -62,7 +62,7 @@ class DBConnect:
         except (Exception, psycopg2.Error) as error:
             raise error
 
-    def query(self, query: str, fetch: bool = True) -> dict | list | pd.DataFrame:
+    def query(self, query: str) -> dict | list | pd.DataFrame:
         """
         Executes a SQL query.
 
@@ -70,8 +70,6 @@ class DBConnect:
         ----------
         query : str
             The SQL query to execute.
-        fetch : bool, optional
-            Whether to fetch the query results, by default True.
 
         Returns
         -------
@@ -97,12 +95,16 @@ class DBConnect:
             if query.strip().split()[0].upper() not in ["SELECT"]:
                 raise ValueError("Only SELECT queries are allowed")
 
+        
         try:
             self.cursor.execute(query)
-            if fetch:
+            if self.query_type == "read":
                 self.result = self.cursor.fetchall()
                 self.result = self.format_result()
                 return self.result
+            elif self.query_type == "write":
+                self.connection.commit()
+                return None
         except psycopg2.errors.GroupingError as error:
             raise error
         except psycopg2.errors.InFailedSqlTransaction as error:
@@ -139,7 +141,7 @@ class DBConnect:
             raise TypeError("Conditions must be a dictionary")
         if not isinstance(self.aggregate, (dict, type(None))):
             raise TypeError("Aggregate must be a dictionary")
-        if not isinstance(self.conjuction, str):
+        if not isinstance(self.conjuction, (str, type(None))):
             raise TypeError("Conjunction must be a string")
         if not isinstance(self.order_by, (dict, type(None), str, tuple)):
             raise TypeError(
@@ -155,7 +157,7 @@ class DBConnect:
              columns: list | None = None,
              aggregate: dict | None = None,
              conditions: dict | None = None,
-             conjuction: str = 'AND',
+             conjuction: str = None,
              order_by: str | tuple | dict | None = None,
              group_by: list | None = None,
              limit: int | None = None) -> dict | list | pd.DataFrame:
@@ -179,7 +181,7 @@ class DBConnect:
             { column: (value, operator), ...}
             Possible operators: =, <, >, <=, >=, <>, IN, NOT IN, BETWEEN, LIKE, ILIKE
         conjuction : str, optional
-            The conjunction to use for multiple conditions, by default 'AND'.
+            The conjunction to use for multiple conditions, by default None.
         order_by : str/tuple/dict/None, optional
             The column(s) to order the data by, by default None.
             column name or (column name, direction) or {column name: direction}
@@ -205,6 +207,7 @@ class DBConnect:
         ValueError
             If group by is not specified for aggregate functions.
         """
+        self.query_type = "read"
         self.schema = schema
         self.table_name = table_name
         self.conditions = conditions
@@ -313,6 +316,35 @@ class DBConnect:
                 _columns = [_col if _col not in self.aggregate else f"{
                     self.aggregate[_col].lower()}: {_col}" for _col in self.columns]
                 return pd.DataFrame(self.result, columns=_columns)
+
+    def write(self, 
+              schema: str, 
+              table_name: str, 
+              mode:str = None,
+              data: dict | None = None 
+              ):
+        self.query_type = "write"
+        if mode.lower().strip() not in ["insert", "update", "delete"]:
+            raise ValueError("Invalid mode")
+
+        self.schema = schema
+        self.table_name = table_name
+        self.mode = mode
+        self.columns = data.keys()
+        self.values = data.values()
+
+        if self.mode == "INSERT":
+            query = sql.SQL("INSERT INTO {}.{} ({}) VALUES ({})").format(
+                sql.Identifier(schema),
+                sql.Identifier(table_name),
+                sql.SQL(', ').join(map(sql.Identifier, self.columns)),
+                sql.SQL(', ').join(map(sql.Literal, self.values))
+            )
+
+        # print(query)
+        self.query(query)
+
+        return self.result
 
     @staticmethod
     def format_array_for_sql(array):
