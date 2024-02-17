@@ -15,7 +15,7 @@ if __name__ == "__main__":
         "port": config['DB']['DB_PORT'],
     }
     
-    dbconnect = DBConnect(conn_params, return_type=pd.DataFrame)
+  
     query = "SELECT * FROM procurement_383.bom_383_main"
     _query_params = {
         "schema": "public",
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         "group_by": ["category", "price"],
         "limit": 10,
     }
-    with dbconnect as cursor:
+    with DBConnect(conn_params, return_type=pd.DataFrame) as cursor:
         # print(cursor.query(query))
         results = cursor.read(**_query_params)
         print(results)
