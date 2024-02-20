@@ -97,6 +97,7 @@ class DBConnect:
                 raise ValueError("Columns must be specified")
             if query.strip().split()[0].upper() not in ["SELECT"]:
                 raise ValueError("Only SELECT queries are allowed")
+            self.query_type = "read"
 
         
         try:
