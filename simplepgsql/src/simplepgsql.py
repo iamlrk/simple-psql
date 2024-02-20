@@ -1,7 +1,6 @@
 import psycopg2
 import pandas as pd
 from psycopg2 import sql
-import datetime as dt
 
 
 class DBConnect:
@@ -62,7 +61,7 @@ class DBConnect:
         except (Exception, psycopg2.Error) as error:
             raise error
 
-    def query(self, query: str) -> dict | list | pd.DataFrame:
+    def query(self, query: str, columns: list|None=None) -> dict | list | pd.DataFrame:
         """
         Executes a SQL query.
 
@@ -92,6 +91,10 @@ class DBConnect:
         if not isinstance(query, (str, sql.Composable)):
             raise ValueError("Query must be a string")
         if isinstance(query, str):
+            if columns:
+                self.columns = columns
+            else:
+                raise ValueError("Columns must be specified")
             if query.strip().split()[0].upper() not in ["SELECT"]:
                 raise ValueError("Only SELECT queries are allowed")
 
@@ -313,8 +316,7 @@ class DBConnect:
             if not self.aggregate:
                 return pd.DataFrame(self.result, columns=self.columns)
             else:
-                _columns = [_col if _col not in self.aggregate else f"{
-                    self.aggregate[_col].lower()}: {_col}" for _col in self.columns]
+                _columns = [_col if _col not in self.aggregate else f"{self.aggregate[_col].lower()}: {_col}" for _col in self.columns]
                 return pd.DataFrame(self.result, columns=_columns)
 
     def write(self, 

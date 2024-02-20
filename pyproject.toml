@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "simplepgsql"
+version = "0.1.1"
+description = "Wrapper around psycopg2 to simplify the process of connecting to a PostgreSQL database and executing queries."
+readme = "README.md"
+authors = [
+    {name = "iamlrk", email = "lepakshiramkiran@hotmail.com"},
+    ]
+license = {file = "LICENSE"}
+keywords = ["python", "pgsql", "psql", "database", "wrapper", "psycopg2", "simple-psql"]
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: SQL",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Repository = "https://github.com/iamlrk/simple-pgsql"

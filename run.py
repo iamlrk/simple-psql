@@ -1,12 +1,15 @@
 import os
 import pandas as pd
-from dbconnect import DBConnect
+from simplepgsql import DBConnect
 import configparser
+import dotenv
 
+dotenv.load_dotenv()
 
 if __name__ == "__main__":
+    # read data from config file
     config = configparser.ConfigParser()
-    config.read('config.ini', encoding='utf-8')
+    config.read("config.ini")
     conn_params = {
         "host": config['DB']['DB_HOST'],
         "database": config['DB']['DB_NAME'],
@@ -16,7 +19,6 @@ if __name__ == "__main__":
     }
     
   
-    query = "SELECT * FROM procurement_383.bom_383_main"
     _query_params = {
         "schema": "public",
         "table_name": "film_list",
@@ -32,6 +34,5 @@ if __name__ == "__main__":
         "limit": 10,
     }
     with DBConnect(conn_params, return_type=pd.DataFrame) as cursor:
-        # print(cursor.query(query))
         results = cursor.read(**_query_params)
         print(results)
