@@ -91,11 +91,12 @@ class DBConnect:
         if not isinstance(query, (str, sql.Composable)):
             raise ValueError("Query must be a string")
         if isinstance(query, str):
+            _write_queries = ["INSERT", "UPDATE", "DELETE"]
             if columns:
                 self.columns = columns
             else:
                 raise ValueError("Columns must be specified")
-            if query.strip().split()[0].upper() not in ["SELECT"]:
+            if any(_w in query.upper() for _w in _write_queries):
                 raise ValueError("Only SELECT queries are allowed")
             self.query_type = "read"
 
