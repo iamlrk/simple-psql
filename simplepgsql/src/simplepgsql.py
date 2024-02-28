@@ -228,7 +228,7 @@ class DBConnect:
         else:
             self.columns = columns
 
-        if aggregate:
+        if aggregate is not None:
             self.aggregate = aggregate
             if not group_by:
                 raise ValueError(
@@ -236,7 +236,7 @@ class DBConnect:
 
         query = sql.SQL("SELECT ").format()
 
-        if aggregate:
+        if aggregate is not None:
             # Apply aggregation function to columns specified in the `aggregate` dictionary, else use the column directly.
             columns_sql = [
                 sql.SQL("{}({})").format(sql.SQL(aggregate.get(column)), sql.Identifier(
@@ -255,7 +255,7 @@ class DBConnect:
             sql.Identifier(table_name)
         )
 
-        if conditions:
+        if conditions is not None:
             conditions = [(sql.Identifier(column), sql.Literal(value), sql.SQL(
                 operator)) for column, (value, operator) in conditions.items()]
             where_clause = sql.SQL(f' {conjuction} ').join(
@@ -270,12 +270,12 @@ class DBConnect:
                 where_clause=where_clause
             )
 
-        if group_by:
+        if group_by is not None:
             query += sql.SQL(" GROUP BY {group}").format(
                 group=sql.SQL(', ').join(map(sql.Identifier, group_by))
             )
 
-        if order_by:
+        if order_by is not None:
             if isinstance(order_by, str):
                 order_by = {order_by: "ASC"}
             elif isinstance(order_by, tuple):
@@ -294,7 +294,7 @@ class DBConnect:
                 order_by_clause=order_by_clause
             )
 
-        if limit:
+        if limit is not None:
             query += sql.SQL(" LIMIT {limit}").format(limit=sql.Literal(limit))
 
         self.query(query)
