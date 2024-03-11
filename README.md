@@ -1,4 +1,4 @@
-# Simple PostgreSQL Interaction in Python
+# Simple PostgreSQL Wrapper for Python
 
 This project contains a Python script (`simplepgsql.py`) that provides a simple interface for interacting with a PostgreSQL database using psycopg2 library.
 
