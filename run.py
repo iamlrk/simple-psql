@@ -1,10 +1,8 @@
 import os
 import pandas as pd
 from simplepgsql import DBConnect
+from simplepgsql import SimplePgSQL
 import configparser
-import dotenv
-
-dotenv.load_dotenv()
 
 if __name__ == "__main__":
     # read data from config file
@@ -19,20 +17,30 @@ if __name__ == "__main__":
     }
     
   
-    # _query_params = {
-    #     "schema": "public",
-    #     "table_name": "film_list",
-    #     "columns": ["category", "price"],
-    #     "aggregate": {
-    #         "price": "SUM"
-    #     },
-    #     "conditions": {
-    #         "length": (60, ">")
-    #     },
-    #     "order_by": ("price", "DESC"),
-    #     "group_by": ["category", "price"],
-    #     "limit": 10,
-    # }
+    _query_params = {
+        "schema": "public",
+        "table_name": "film_list",
+        "columns": ["category", "price"],
+        "aggregate": {
+            "price": "SUM"
+        },
+        "conditions": {
+            "length": (60, ">")
+        },
+        "order_by": ("price", "DESC"),
+        "group_by": ["category", "price"],
+        "limit": 10,
+    }
+
+    # Using SimplePgSQL class
+    pgsql = SimplePgSQL(conn_params, return_type=pd.DataFrame)
+
+    q_results = pgsql.execute("SELECT category, price FROM film_list LIMIT 10;", columns=["category", "price"])
+    r_results = pgsql.read(**_query_params)
+    print(q_results)
+    print(r_results)
+    
+    # Deprecated method to query data DO NOT USE. For backward compatibility only
     with DBConnect(conn_params, return_type=pd.DataFrame) as cursor:
-        results = cursor.query("SELECT category, price FROM film_list LIMIT 10;", columns=["category", "price"])
-        print(results)
+        q_results = cursor.query("SELECT category, price FROM film_list LIMIT 10;", columns=["category", "price"])
+        r_results = cursor.read(**_query_params)

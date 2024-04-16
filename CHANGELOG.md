@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.7] - 2024-04-16
+
+### Added
+1. It automatically creates and destroys the cursor. No need to use `with` to enter.
+
+### Removed/Deprecated
+1. DBConnect Class. It will still exist but new features will not be supported for backwards compatibility of versions. It is replaced by `SimplePgSQL` class. 
+
+## [0.1.6] - 2024-03-04
+
+### Bugfix
+1. fixed Breaking of IN/NOT IN usage. 
+
+## [0.1.5] - 2024-02-28
+
+### Added
+1. Read now supports BETWEEN, IN, NOT IN clauses.
+
+## [0.1.4] - 2024-02-28
+
+### Bugfix
+1. Fix conditional check on inputs.
+
 ## [0.1.3] - 2024-02-21
 
 ### Bugfix

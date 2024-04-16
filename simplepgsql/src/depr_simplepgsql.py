@@ -1,9 +1,10 @@
+from typing_extensions import deprecated
 import psycopg2
 import pandas as pd
 from psycopg2 import sql
 
-
-class SimplePgSQL:
+@deprecated("Use SimplePgSQL class instead")
+class DBConnect:
     def __init__(self, conn_params: dict, return_type: type = dict) -> None:
         """
         Initializes a DBConnect object.
@@ -21,7 +22,7 @@ class SimplePgSQL:
         ValueError
             If an invalid return type is specified.
         """
-        self.conn_params = conn_params
+        self.comm_params = conn_params
         self.connection = None
         self.cursor = None
         self.result = None
@@ -33,14 +34,13 @@ class SimplePgSQL:
         self.order_by = None
         self.group_by = None
         self.limit = None
-        self.query_type = None
         if return_type not in [list, dict, pd.DataFrame]:
             raise ValueError("Invalid return type")
         self.return_type = return_type
 
         # self.query_params = query_params
 
-    def __enter__(self) -> 'SimplePgSQL':
+    def __enter__(self) -> 'DBConnect':
         """
         Establishes a connection to the PostgreSQL database and returns a cursor.
 
@@ -55,27 +55,14 @@ class SimplePgSQL:
             If there is an error while connecting to the PostgreSQL database.
         """
         try:
-            self.connection = psycopg2.connect(**self.conn_params)
+            self.connection = psycopg2.connect(**self.comm_params)
             self.cursor = self.connection.cursor()
             return self
 
         except (Exception, psycopg2.Error) as error:
             raise error
-        
-    def __execute(self, query: str) -> None:
-        with self:
-            self.cursor.execute(query)
-            if self.query_type == "read":
-                self.result = self.cursor.fetchall()
-                self.result = self.format_result()
-                return self.result
-            elif self.query_type == "write":
-                self.connection.commit()
-                return None
-            else:
-                return None
 
-    def execute(self, query: str, columns: list|None=None) -> dict | list | pd.DataFrame:
+    def query(self, query: str, columns: list|None=None) -> dict | list | pd.DataFrame:
         """
         Executes a SQL query.
 
@@ -116,7 +103,14 @@ class SimplePgSQL:
 
         
         try:
-            return self.__execute(query)
+            self.cursor.execute(query)
+            if self.query_type == "read":
+                self.result = self.cursor.fetchall()
+                self.result = self.format_result()
+                return self.result
+            elif self.query_type == "write":
+                self.connection.commit()
+                return None
         except psycopg2.errors.GroupingError as error:
             raise error
         except psycopg2.errors.InFailedSqlTransaction as error:
@@ -334,7 +328,7 @@ class SimplePgSQL:
         if limit is not None:
             query += sql.SQL(" LIMIT {limit}").format(limit=sql.Literal(limit))
 
-        self.execute(query)
+        self.query(query)
 
         return self.result
 
@@ -355,7 +349,7 @@ class SimplePgSQL:
             if not self.aggregate:
                 return pd.DataFrame(self.result, columns=self.columns)
             else:
-                _columns = [_col if _col not in self.aggregate else f"{_col}.{self.aggregate[_col].lower()}" for _col in self.columns]
+                _columns = [_col if _col not in self.aggregate else f"{self.aggregate[_col].lower()}: {_col}" for _col in self.columns]
                 return pd.DataFrame(self.result, columns=_columns)
 
     def write(self, 
@@ -383,7 +377,7 @@ class SimplePgSQL:
             )
 
         # print(query)
-        self.execute(query)
+        self.query(query)
 
         return self.result
 
