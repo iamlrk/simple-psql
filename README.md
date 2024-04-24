@@ -5,11 +5,11 @@ This project contains a Python script (`simplepgsql.py`) that provides a simple 
 ## Getting Started
 
 Install via PIP
+`pip install simplepgsql`
 
 ### Dependent Libraries
 
 - Python 3.6+
-- PostgreSQL
 - psycopg2 Python library
 - Pandas
 
@@ -40,16 +40,15 @@ _query_params = {
         "group_by": ["category", "price"],
         "limit": 10,
     }
-    with DBConnect(conn_params, return_type=pd.DataFrame) as cursor:
-        results = cursor.read(**_query_params)
-        print(results)
+  results = pgsql.read(**_query_params)
+  print(results)
 
 ```
 
 ### Output
 
 ```cmd
-      category sum: price
+      category  price.sum
 0          New     109.78
 1       Travel     109.78
 2       Family      74.85

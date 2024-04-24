@@ -165,11 +165,11 @@ class SimplePgSQL:
 
     def read(self,
              schema: str,
-             table_name: str,
+             table: str,
              columns: list | None = None,
              aggregate: dict | None = None,
              conditions: dict | None = None,
-             conjuction: str = None,
+             conjunction: str = None,
              order_by: str | tuple | dict | None = None,
              group_by: list | None = None,
              limit: int | None = None) -> dict | list | pd.DataFrame:
@@ -221,9 +221,9 @@ class SimplePgSQL:
         """
         self.query_type = "read"
         self.schema = schema
-        self.table_name = table_name
+        self.table_name = table
         self.conditions = conditions
-        self.conjuction = conjuction
+        self.conjuction = conjunction
         self.order_by = order_by
         self.group_by = group_by
         self.limit = limit
@@ -231,7 +231,7 @@ class SimplePgSQL:
         self.validate_query_params()
 
         if not columns:
-            self.columns = self._get_column_names(schema, table_name)
+            self.columns = self._get_column_names(schema, table)
         else:
             self.columns = columns
 
@@ -259,7 +259,7 @@ class SimplePgSQL:
 
         query += sql.SQL(" FROM {}.{}").format(
             sql.Identifier(schema),
-            sql.Identifier(table_name)
+            sql.Identifier(table)
         )
 
         if conditions is not None:
