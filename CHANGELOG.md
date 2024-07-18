@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.9] - 2024-07-18
+
+### Added
+1. Can write multiple lines at once to the db
+
+
 ## [0.1.8] - 2024-04-24
 
 ### Bugfix
