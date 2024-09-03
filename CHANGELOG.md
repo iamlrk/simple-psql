@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.10] - 2024-07-18
+
+### Bugfix
+1. Fixed the bug where the `SimplePgSQL` class was not able to write to db.
+2. The `SimplePgSQL.read` method was not able to take list as an input for conditions. Fixed that.
+
 ## [0.1.9] - 2024-07-18
 
 ### Added

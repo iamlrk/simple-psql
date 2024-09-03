@@ -1,3 +1,5 @@
+import json
+
 import psycopg2
 import pandas as pd
 from psycopg2 import sql
@@ -156,7 +158,7 @@ class SimplePgSQL:
             raise TypeError("Aggregate must be a dictionary")
         if not isinstance(self.conjuction, (str, type(None))):
             raise TypeError("Conjunction must be a string")
-        if not isinstance(self.order_by, (dict, type(None), str, tuple)):
+        if not isinstance(self.order_by, (dict, type(None), str, tuple, list)):
             raise TypeError("order_by must be a dictionary/tuple/string or None")
         if not isinstance(self.group_by, (list, type(None))):
             raise TypeError("Group must be a list")
@@ -229,6 +231,7 @@ class SimplePgSQL:
         self.order_by = order_by
         self.group_by = group_by
         self.limit = limit
+        query = None
 
         self.validate_query_params()
 
@@ -385,6 +388,7 @@ class SimplePgSQL:
         table_name: str,
         mode: str = None,
         data: dict | list | None = None,
+        json_data: bool = False,
     ):
         self.query_type = "write"
         if mode.lower().strip() not in ["insert", "update", "delete"]:
@@ -393,8 +397,25 @@ class SimplePgSQL:
         self.schema = schema
         self.table_name = table_name
         self.mode = mode
+        query = None
 
-        if self.mode == "INSERT" and isinstance(data, dict):
+        if self.mode.upper() == "INSERT" and json_data and isinstance(data, dict):
+            self.columns = data.keys()
+            self.values = []
+            for vals in data.values():
+                if isinstance(vals, dict):
+                    self.values.append(vals)
+                else:
+                    self.values.append(json.dumps(vals))
+
+            query = sql.SQL("INSERT INTO {}.{} ({}) VALUES ({})").format(
+                sql.Identifier(schema),
+                sql.Identifier(table_name),
+                sql.SQL(", ").join(map(sql.Identifier, self.columns)),
+                sql.SQL(", ").join(map(sql.Literal, self.values)),
+            )
+
+        elif self.mode.upper() == "INSERT" and isinstance(data, dict):
             self.columns = data.keys()
             self.values = data.values()
             query = sql.SQL("INSERT INTO {}.{} ({}) VALUES ({})").format(
@@ -403,7 +424,7 @@ class SimplePgSQL:
                 sql.SQL(", ").join(map(sql.Identifier, self.columns)),
                 sql.SQL(", ").join(map(sql.Literal, self.values)),
             )
-        elif self.mode == "INSERT" and isinstance(data, list):
+        elif self.mode.upper() == "INSERT" and isinstance(data, list):
             self.columns = data[0].keys()
             _values = [
                 sql.SQL("({})").format(
@@ -417,6 +438,8 @@ class SimplePgSQL:
                 sql.SQL(", ").join(map(sql.Identifier, self.columns)),
                 sql.SQL(", ").join(_values),
             )
+        else:
+            raise ValueError("Invalid data type")
 
         self.execute(query)
 
@@ -458,7 +481,8 @@ class SimplePgSQL:
         query = sql.SQL("SELECT * FROM {schema}.{table_name} LIMIT 1;").format(
             schema=sql.Identifier(schema), table_name=sql.Identifier(table_name)
         )
-        self.cursor.execute(query)
+        with self:
+            self.cursor.execute(query)
         self.columns = [desc[0] for desc in self.cursor.description]
         return self.columns
 
