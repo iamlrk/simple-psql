@@ -3,8 +3,7 @@ from simplepgsql import PgSQLWizard, SimplePgSQL
 from simplepgsql import Query
 import configparser
 
-if __name__ == "__main__":
-    # read data from config file
+def get_config():
     config = configparser.ConfigParser()
     config.read("config.ini")
     conn_params = {
@@ -14,24 +13,32 @@ if __name__ == "__main__":
         "password": config['DB']['DB_PASSWORD'].strip(),
         "port": config['DB']['DB_PORT'],
     }
+    return conn_params
+
+
+if __name__ == "__main__":
+    # read data from config file
+    conn_params = get_config()
 
     _query_params = {
         'schema': "public",
         'table': "film_list",
-        'columns': ["title", "price"],
+        'columns': ["category", "price"],
+        # 'columns': "category",
         # 'aggregate': {
-        #     "price": "SUM"
+        #     "category": "COUNT"
         # },
-        # 'where': {
-        #     "length": (">", 60)
-        # },
+        'where': {
+            "length": (">", 60)
+        },
         # 'order_by': {"price": 'DESC'},
         # 'group_by': ["category", "price"],
-        'limit': 100,
+        # 'limit': 1,
     }
 
-    _query = Query().from_params(**_query_params)
     pgsql = PgSQLWizard(**conn_params, return_type='pd.DataFrame')
-    data = pgsql.read(_query)
+    query_1 = Query().from_params(**_query_params)
+    data = pgsql.read_column(query_1)
     print(data)
+
 

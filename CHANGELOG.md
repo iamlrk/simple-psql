@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.11] - 2024-11-07
+
+### Bugfix
+1. Json.dumps was called when it was not a dict causing issues while writing json datatypes.
+
 ## [0.1.10] - 2024-07-18
 
 ### Bugfix
